@@ -61,8 +61,11 @@ executable jsondiff
                        aeson == 0.7.0.6,
                        attoparsec == 0.11.3.4,
                        bytestring == 0.10.4.0,
-                       vector == 0.10.9.1
-  
+                       vector == 0.10.9.1,
+                       unordered-containers == 0.2.4.0,
+                       containers == 0.5.5.1,
+                       text == 1.1.0.0,
+                       hashable == 1.2.2.0
   -- Directories containing source files.
   hs-source-dirs: src
   
