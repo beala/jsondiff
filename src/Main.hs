@@ -1,9 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+import           Data.Aeson.Encode
 import           Data.Aeson.Parser
 import           Data.Aeson.Types
 import           Data.Attoparsec.ByteString as Atto
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as LB
 import qualified Data.HashMap.Strict as HMap
 import           Data.Hashable
 import qualified Data.List as L
@@ -27,16 +29,18 @@ parseArgs rawArgs = (B.pack (rawArgs !! 0), B.pack (rawArgs !! 1))
 
 data PathElem = Field String
               | ArrayIndex Int
+              | Root
 
 instance Show PathElem where
     show (Field s) = s
     show (ArrayIndex i) = "array[" ++ (show i) ++ "]"
+    show Root = "root"
 
 type Path = [PathElem] 
 data Diff = Diff Path (Maybe Value) (Maybe Value) deriving Show
 
 diff :: Maybe Value -> Maybe Value -> [Diff]
-diff v1 v2 = fmap reversePath (diffMaybeJson v1 v2 [] [])
+diff v1 v2 = fmap reversePath (diffMaybeJson v1 v2 [Root] [])
              where reversePath (Diff p n1 n2) = (Diff (reverse p) n1 n2)
 
 diffMaybeJson :: Maybe Value -> Maybe Value -> Path -> [Diff] -> [Diff]
@@ -90,7 +94,12 @@ prettyPrintDiffs (Left parseError) = "Error parsing json: " ++ parseError ++ "\n
 prettyPrintDiffs (Right ds)     = unlines $ fmap prettyPrintDiff ds
 
 prettyPrintDiff :: Diff -> String
-prettyPrintDiff (Diff p v1 v2) = (prettyPrintPath p) ++ " [" ++ (prettyPrintMaybeValue v1) ++ "] [" ++ (prettyPrintMaybeValue v2) ++ "]"
+prettyPrintDiff (Diff p v1 v2) = (prettyPrintPath p)
+                                 ++ "\n\t"
+                                 ++ (prettyPrintMaybeValue v1)
+                                 ++ "\n\t"
+                                 ++ (prettyPrintMaybeValue v2)
+                                 ++ ""
 
 prettyPrintPath :: Path -> String
 prettyPrintPath = L.intercalate "." . fmap show
@@ -100,4 +109,4 @@ prettyPrintMaybeValue (Just v) = prettyPrintValue v
 prettyPrintMaybeValue Nothing = "Missing"
 
 prettyPrintValue :: Value -> String
-prettyPrintValue = show
+prettyPrintValue = LB.unpack . encode
